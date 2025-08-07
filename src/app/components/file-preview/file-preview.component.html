@@ -1,0 +1,69 @@
+<div class="preview-container" *ngIf="previewResult">
+  <div class="preview-header">
+    <h3>{{ previewResult.fileName }}</h3>
+    <div class="header-controls">
+      <button *ngIf="previewResult.type === 'pdf'" class="control-btn" (click)="toggleFullscreen()" [title]="isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'">
+        {{ isFullscreen ? '⤓' : '⤢' }}
+      </button>
+      <button *ngIf="previewResult.type === 'pdf' || previewResult.type === 'html'" class="control-btn" (click)="downloadFile()" title="Download">
+        ⬇
+      </button>
+      <button class="close-btn" (click)="dialogRef.close()">×</button>
+    </div>
+  </div>
+  
+  <div class="preview-content" [class.fullscreen]="isFullscreen">
+    <!-- Image Preview -->
+    <div *ngIf="previewResult.type === 'image'" class="image-preview">
+      <img [src]="getImageContent()" [alt]="previewResult.fileName" class="preview-image">
+    </div>
+    
+    <!-- PDF Preview -->
+    <div *ngIf="previewResult.type === 'pdf'" class="pdf-preview">
+      <div class="pdf-controls" *ngIf="pdfDocument">
+        <button class="nav-btn" (click)="previousPage()" [disabled]="currentPage <= 1">‹</button>
+        <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+        <button class="nav-btn" (click)="nextPage()" [disabled]="currentPage >= totalPages">›</button>
+        <div class="zoom-controls">
+          <button class="zoom-btn" (click)="zoomOut()" title="Zoom Out">−</button>
+          <span class="zoom-level">{{ Math.round(zoomLevel * 100) }}%</span>
+          <button class="zoom-btn" (click)="zoomIn()" title="Zoom In">+</button>
+        </div>
+      </div>
+      
+      <div class="pdf-viewer-container">
+        <!-- Canvas for PDF.js rendering -->
+        <canvas #pdfCanvas class="pdf-canvas" *ngIf="pdfDocument"></canvas>
+        
+        <!-- Iframe fallback for PDF viewing -->
+        <iframe 
+          *ngIf="!pdfDocument && !isLoading && pdfBlobUrl" 
+          [src]="pdfBlobUrl | safe" 
+          class="pdf-iframe"
+          title="PDF Preview">
+        </iframe>
+        
+        <div *ngIf="isLoading" class="loading-overlay">
+          <div class="spinner"></div>
+          <p>Loading PDF...</p>
+        </div>
+      </div>
+      
+      <div class="pdf-fallback" *ngIf="!pdfDocument && !isLoading && !pdfBlobUrl">
+        <p>PDF preview not available. Click the button below to view in a new tab.</p>
+        <button class="view-pdf-btn" (click)="openPdfInNewTab()">
+          View PDF in New Tab
+        </button>
+      </div>
+    </div>
+    
+    <!-- DOCX Preview (Word documents) -->
+    <div *ngIf="previewResult.type === 'html' && originalFile && (previewResult.fileName.toLowerCase().endsWith('.docx') || previewResult.fileName.toLowerCase().endsWith('.doc'))" class="docx-preview">
+      <app-docx-preview 
+        [file]="originalFile"
+        [fileName]="previewResult.fileName"
+        style="width: 100%; height: 100%;">
+      </app-docx-preview>
+    </div>
+  </div>
+</div> 
