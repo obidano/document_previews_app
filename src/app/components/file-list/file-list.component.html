@@ -1,0 +1,124 @@
+<div class="file-list-container">
+  <div class="header">
+    <h2>Document Preview App</h2>
+    <div class="header-actions">
+      <button class="upload-btn" (click)="openUploadDialog()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7,10 12,15 17,10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Upload Files
+      </button>
+      <button class="refresh-btn" (click)="loadFiles()" [disabled]="loading">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 2v6h-6"></path>
+          <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+          <path d="M3 22v-6h6"></path>
+          <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading files...</p>
+  </div>
+
+  <div *ngIf="!loading && files.length === 0" class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+      <polyline points="14,2 14,8 20,8"></polyline>
+      <line x1="16" y1="13" x2="8" y2="13"></line>
+      <line x1="16" y1="17" x2="8" y2="17"></line>
+      <polyline points="10,9 9,9 8,9"></polyline>
+    </svg>
+    <h3>No files uploaded yet</h3>
+    <p>Upload some files to see them here</p>
+  </div>
+
+  <div *ngIf="!loading && files.length > 0" class="table-container">
+    <ngx-datatable
+      class="bootstrap full-width-table"
+      [rows]="files"
+      [columns]="columns"
+      [headerHeight]="50"
+      [footerHeight]="50"
+      [limit]="10"
+      [rowHeight]="'auto'"
+      [reorderable]="true"
+      [loadingIndicator]="loading"
+      [scrollbarH]="true"
+      [columnMode]="'force'">
+      
+             <!-- File Type Icon Column -->
+       <ngx-datatable-column name="Type" [width]="30" [sortable]="false">
+         <ng-template ngx-datatable-cell-template let-row="row">
+           <div class="file-icon">
+             {{ getFileIcon(row.mimetype) }}
+           </div>
+         </ng-template>
+       </ngx-datatable-column>
+
+       <!-- File Name Column -->
+       <ngx-datatable-column name="File Name" prop="originalName">
+         <ng-template ngx-datatable-cell-template let-row="row">
+           <div class="file-name">
+             <span class="name">{{ row.originalName }}</span>
+             <!-- <span class="size">{{ formatFileSize(row.size) }}</span> -->
+           </div>
+         </ng-template>
+       </ngx-datatable-column>
+
+        <!-- File Size Column -->
+        <ngx-datatable-column name="File Size" prop="size" [width]="50">
+          <ng-template ngx-datatable-cell-template let-row="row">
+            {{ formatFileSize(row.size) }}
+          </ng-template>
+        </ngx-datatable-column>
+
+       <!-- Upload Date Column -->
+       <ngx-datatable-column name="Upload Date" prop="uploadDate" [width]="70">
+         <ng-template ngx-datatable-cell-template let-row="row">
+           {{ formatDate(row.uploadDate) }}
+         </ng-template>
+       </ngx-datatable-column>
+
+       <!-- Actions Column -->
+       <ngx-datatable-column name="Actions" [width]="120" [sortable]="false">
+        <ng-template ngx-datatable-cell-template let-row="row">
+          <div class="actions">
+            <button class="btn-preview" (click)="previewFile(row)" title="Preview">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              Preview
+            </button>
+            <button class="btn-download" (click)="downloadFile(row)" title="Download">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7,10 12,15 17,10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Download
+            </button>
+            <button class="btn-delete" (click)="deleteFile(row)" title="Delete">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3,6 5,6 21,6"></polyline>
+                <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"></path>
+              </svg>
+              Delete
+            </button>
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+    </ngx-datatable>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+</div> 
