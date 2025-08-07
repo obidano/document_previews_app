@@ -1,6 +1,6 @@
 # Document Preview Application
 
-A modern Angular 19 application for uploading and previewing various document types including Word documents, PDFs, images, and ODF files.
+A modern Angular 19 application for uploading and previewing various document types including Word documents, PDFs, images, and ODF files, with a Node.js backend for file storage and management.
 
 ## Features
 
@@ -8,84 +8,150 @@ A modern Angular 19 application for uploading and previewing various document ty
 - **File Validation**: Automatic validation of supported file types
 - **Preview Functionality**: 
   - Images: Direct display
-  - PDFs: Inline preview with navigation, zoom, and fullscreen controls
+  - PDFs: Inline preview with navigation and zoom controls
   - Word documents: Converted to HTML for inline preview
-  - ODF: Display conversion message
+  - Text files: Direct text display
+  - Excel/PowerPoint: Informational display
+- **File Management**: 
+  - Upload files to server
+  - View all uploaded files in a datatable
+  - Download files
+  - Delete files
+  - Preview files from the list
 - **Responsive Design**: Mobile-friendly interface
 - **Error Handling**: Comprehensive error messages and loading states
-- **PDF Validation**: Advanced PDF validation with empty file detection and header checking
 
 ## Supported File Types
 
-- **Documents**: PDF, DOCX, DOC
-- **Images**: PNG, JPG, JPEG, GIF, BMP, WebP
-- **Text Files**: TXT, MD, CSV, JSON, XML, HTML
-- **Spreadsheets**: XLSX, XLS
-- **Presentations**: PPTX, PPT
-- **Open Documents**: ODF, ODT, ODS, ODP
+- **PDF Documents**: .pdf
+- **Word Documents**: .docx, .doc
+- **Images**: .png, .jpg, .jpeg, .gif, .bmp, .webp
 
-## PDF Error Handling
+## Prerequisites
 
-The application includes comprehensive PDF validation and error handling:
+- Node.js (v16 or higher)
+- npm (v8 or higher)
 
-- **Empty File Detection**: Checks for zero-byte PDF files
-- **Header Validation**: Verifies PDF files have valid %PDF header
-- **User-Friendly Messages**: Clear error messages with troubleshooting tips
-- **Fallback Options**: Multiple viewing options when PDF.js fails
-- **Pre-upload Validation**: Validates PDF files before processing
+## Installation
 
-## Development server
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-To start a local development server, run:
+## Running the Application
 
-```bash
-ng serve
-```
+### Option 1: Start Both Frontend and Backend Together (Recommended)
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Start both the Angular frontend and Node.js server with a single command:
 
 ```bash
-ng generate component component-name
+# Start both in development mode (with auto-restart for server)
+npm run dev
+
+# Or start both in production mode
+npm run start:all
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+This will start:
+- **Angular app** on `http://localhost:4555`
+- **Node.js server** on `http://localhost:3001`
+
+### Option 2: Start Frontend and Backend Separately
+
+#### Start the Node.js Server
+
+The server handles file uploads and provides API endpoints for file management.
 
 ```bash
-ng generate --help
+# Start server in development mode (with auto-restart)
+npm run server:dev
+
+# Or start server in production mode
+npm run server
 ```
 
-## Building
+The server will run on `http://localhost:3001`
 
-To build the project run:
+#### Start the Angular Application
+
+In a new terminal window:
 
 ```bash
-ng build
+# Start Angular development server
+npm start
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+The application will be available at `http://localhost:4555`
 
-## Running unit tests
+## API Endpoints
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+- `POST /api/upload` - Upload a file
+- `GET /api/files` - Get all uploaded files
+- `DELETE /api/files/:id` - Delete a file
+- `GET /uploads/:filename` - Download a file
 
-```bash
-ng test
+## Project Structure
+
+```
+doc_preview/
+├── src/                          # Angular application
+│   ├── app/
+│   │   ├── components/
+│   │   │   ├── file-upload/      # File upload component
+│   │   │   ├── file-preview/     # File preview component
+│   │   │   └── file-list/        # File list with datatable
+│   │   ├── services/
+│   │   │   ├── file-preview.service.ts
+│   │   │   ├── file-upload.service.ts
+│   │   │   └── pdf.service.ts
+│   │   └── pipes/
+│   │       └── safe.pipe.ts
+├── server/                       # Node.js server
+│   ├── server.js                 # Main server file
+│   └── uploads/                  # Uploaded files directory
+└── package.json                  # Dependencies for both client and server
 ```
 
-## Running end-to-end tests
+## Usage
 
-For end-to-end (e2e) testing, run:
+1. Open the application in your browser
+2. Upload files using the drag-and-drop area or browse button
+3. View uploaded files in the datatable below
+4. Use the action buttons to preview, download, or delete files
+5. Preview files inline with full navigation controls
 
-```bash
-ng e2e
-```
+## Development
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+### Adding New File Types
 
-## Additional Resources
+1. Update the `acceptedFileTypes` in `file-upload.component.ts`
+2. Add the MIME type to the server's `allowedTypes` array in `server.js`
+3. Add handling logic in `file-preview.service.ts`
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+### Server Configuration
+
+The server can be configured by modifying environment variables:
+- `PORT`: Server port (default: 3001)
+- `MAX_FILE_SIZE`: Maximum file size in bytes (default: 50MB)
+
+## Troubleshooting
+
+### Server Issues
+- Ensure port 3001 is not in use
+- Check that all server dependencies are installed
+- Verify the uploads directory has write permissions
+
+### Angular Issues
+- Clear browser cache if changes don't appear
+- Check browser console for errors
+- Ensure all Angular dependencies are installed
+
+## Technologies Used
+
+- **Frontend**: Angular 19, TypeScript, SCSS
+- **Backend**: Node.js, Express.js, Multer
+- **UI Components**: ngx-datatable
+- **File Processing**: PDF.js, Mammoth.js, Docx-preview
+- **Styling**: Modern CSS with gradients and animations
