@@ -1,4 +1,53 @@
 /* You can add global styles to this file, and also import other style files */
+
+/* Angular Material Dialog Styles */
+.file-preview-dialog {
+  .mat-mdc-dialog-container {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  
+  .mat-mdc-dialog-surface {
+    padding: 0;
+    border-radius: 12px;
+  }
+}
+
+.file-upload-dialog {
+  .mat-mdc-dialog-container {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  
+  .mat-mdc-dialog-surface {
+    padding: 0;
+    border-radius: 12px;
+  }
+}
+
+/* Custom scrollbar for dialog content */
+.file-preview-dialog .mat-mdc-dialog-content {
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+.file-preview-dialog .mat-mdc-dialog-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.file-preview-dialog .mat-mdc-dialog-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.file-preview-dialog .mat-mdc-dialog-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.file-preview-dialog .mat-mdc-dialog-content::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
 * {
   box-sizing: border-box;
 }
