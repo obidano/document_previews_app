@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { Observable, from } from 'rxjs';
-import * as mammoth from 'mammoth';
 import * as docxPreview from 'docx-preview';
 
 export interface FilePreviewResult {
@@ -87,8 +86,13 @@ export class FilePreviewService {
 
   private async handlePdfFile(file: File, fileName: string): Promise<FilePreviewResult> {
     return new Promise((resolve, reject) => {
+      console.log('Handling PDF file:', fileName);
+      console.log('File size:', file.size);
+      console.log('File type:', file.type);
+      
       // Check if file is empty
       if (file.size === 0) {
+        console.error('PDF file is empty (0 bytes)');
         reject(new Error('The PDF file is empty, i.e. its size is zero bytes.'));
         return;
       }
@@ -97,26 +101,36 @@ export class FilePreviewService {
       reader.onload = async (e) => {
         try {
           const arrayBuffer = e.target?.result as ArrayBuffer;
+          console.log('ArrayBuffer size:', arrayBuffer?.byteLength);
           
           // Additional validation for PDF content
           if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+            console.error('ArrayBuffer is empty or null');
             reject(new Error('The PDF file is empty, i.e. its size is zero bytes.'));
             return;
           }
           
           // Check for valid PDF header
           const uint8Array = new Uint8Array(arrayBuffer);
+          console.log('Uint8Array length:', uint8Array.length);
+          
           if (uint8Array.length < 4) {
+            console.error('File too small to be a valid PDF');
             reject(new Error('Invalid PDF file: File is too small to be a valid PDF.'));
             return;
           }
           
           const pdfHeader = String.fromCharCode(...uint8Array.slice(0, 4));
+          console.log('PDF header:', pdfHeader);
+          console.log('First 10 bytes:', Array.from(uint8Array.slice(0, 10)).map(b => b.toString(16).padStart(2, '0')).join(' '));
+          
           if (pdfHeader !== '%PDF') {
+            console.error('Invalid PDF header:', pdfHeader);
             reject(new Error('Invalid PDF file: File does not have a valid PDF header.'));
             return;
           }
           
+          console.log('PDF validation passed, resolving...');
           resolve({
             type: 'pdf',
             content: arrayBuffer,
@@ -125,10 +139,12 @@ export class FilePreviewService {
             fileSize: this.formatFileSize(file.size)
           });
         } catch (error) {
+          console.error('Error in PDF handling:', error);
           reject(error);
         }
       };
       reader.onerror = (error) => {
+        console.error('FileReader error:', error);
         reject(new Error(`Failed to read PDF file: ${error}`));
       };
       reader.readAsArrayBuffer(file);
@@ -136,25 +152,29 @@ export class FilePreviewService {
   }
 
   private async handleWordFile(file: File, fileName: string, fileType: string): Promise<FilePreviewResult> {
+    // Use docx-preview directly without HTML conversion
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
           const arrayBuffer = e.target?.result as ArrayBuffer;
           
-          // Use docx-preview for better style preservation
+          // Use docx-preview for direct rendering
           const container = document.createElement('div');
           container.style.cssText = `
             font-family: 'Times New Roman', serif;
             line-height: 1.6;
             color: #333;
             background: white;
-            padding: 2rem;
-            max-width: 800px;
+            padding: 3rem;
+            max-width: 900px;
             margin: 0 auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            min-height: 100vh;
           `;
           
-          // Configure docx-preview options for better rendering
+          // Configure docx-preview options for optimal rendering
           const options = {
             className: 'docx-preview',
             inWrapper: true,
@@ -171,14 +191,92 @@ export class FilePreviewService {
             renderFooters: true,
             renderFootnotes: true,
             renderHeaders: true,
+            renderImages: true,
+            renderTables: true,
+            renderLists: true,
+            renderParagraphs: true,
+            renderSections: true,
+            renderComments: true,
+            renderBookmarks: true,
+            renderHyperlinks: true,
+            renderFields: true,
+            renderShapes: true,
+            renderTextboxes: true,
+            renderSmartArt: true,
+            renderCharts: true,
+            renderEquations: true,
+            renderWatermarks: true,
+            renderBackgrounds: true,
+            renderBorders: true,
+            renderShadows: true,
+            renderGradients: true,
+            renderPatterns: true,
+            renderTextEffects: true,
+            renderPageBreaks: true,
+            renderColumnBreaks: true,
+            renderLineBreaks: true,
+            renderSoftHyphens: true,
+            renderNonBreakingSpaces: true,
+            renderEmSpaces: true,
+            renderEnSpaces: true,
+            renderThinSpaces: true,
+            renderHairSpaces: true,
+            renderZeroWidthSpaces: true,
+            renderZeroWidthNonJoiners: true,
+            renderZeroWidthJoiners: true,
+            renderLeftToRightMarks: true,
+            renderRightToLeftMarks: true,
+            renderLeftToRightEmbeddings: true,
+            renderRightToLeftEmbeddings: true,
+            renderPopDirectionalFormatting: true,
+            renderPopDirectionalIsolates: true,
+            renderLeftToRightOverrides: true,
+            renderRightToLeftOverrides: true,
             table: {
               maxWidth: 100,
-              usePercentages: true
+              usePercentages: true,
+              borderStyle: 'solid',
+              borderWidth: '1px',
+              borderColor: '#333',
+              cellPadding: '6px',
+              cellSpacing: '0px',
+              headerBackground: '#f5f5f5',
+              headerColor: '#333',
+              zebraStripes: false,
+              responsive: true
             },
             image: {
               preserveAspectRatio: true,
-              maxWidth: 100,
-              maxHeight: 100
+              maxWidth: '100%',
+              maxHeight: 'auto',
+              display: 'block',
+              margin: '1rem auto',
+              border: '1px solid #ccc',
+              borderRadius: '2px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            },
+            font: {
+              fallback: 'Arial, Helvetica, sans-serif',
+              size: '14px',
+              lineHeight: '1.6',
+              color: '#333'
+            },
+            paragraph: {
+              margin: '0 0 1rem 0',
+              textAlign: 'left',
+              lineHeight: '1.6'
+            },
+            heading: {
+              margin: '1.5rem 0 0.5rem 0',
+              fontWeight: 'bold',
+              color: '#333'
+            },
+            list: {
+              margin: '0 0 1rem 0',
+              paddingLeft: '2rem'
+            },
+            listItem: {
+              margin: '0.25rem 0'
             }
           };
           
@@ -186,97 +284,127 @@ export class FilePreviewService {
           await docxPreview.renderAsync(arrayBuffer, container, undefined, options);
           console.log('DOCX rendered successfully');
           
-          // Add custom CSS for better styling
+          // Post-process the rendered content to ensure images are properly displayed
+          const images = container.querySelectorAll('img');
+          images.forEach((img, index) => {
+            if (img.src && img.src.startsWith('data:')) {
+              // Image is already embedded as base64, ensure it's visible
+              img.style.display = 'block';
+              img.style.maxWidth = '100%';
+              img.style.height = 'auto';
+              img.style.margin = '1rem auto';
+              img.style.border = '1px solid #dee2e6';
+              img.style.borderRadius = '4px';
+              img.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            } else if (!img.src || img.src === '') {
+              // Handle missing image sources
+              console.warn(`Image ${index} has no source, creating placeholder`);
+              img.style.display = 'block';
+              img.style.width = '200px';
+              img.style.height = '150px';
+              img.style.backgroundColor = '#f8f9fa';
+              img.style.border = '2px dashed #dee2e6';
+              img.style.borderRadius = '4px';
+              img.style.margin = '1rem auto';
+              img.alt = 'Image not available';
+              img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjhmOWZhIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBhdmFpbGFibGU8L3RleHQ+PC9zdmc+';
+            }
+          });
+          
+          // Add custom CSS to preserve document integrity
           const customStyles = `
             <style>
               .docx-preview {
-                font-family: 'Times New Roman', serif !important;
-                line-height: 1.6 !important;
-                color: #333 !important;
-                background: white !important;
+                font-family: 'Times New Roman', serif;
+                line-height: 1.6;
+                color: #333;
+                background: white;
+                padding: 0;
+                margin: 0;
+                max-width: none;
               }
               
+              .docx-preview * {
+                box-sizing: border-box;
+              }
+              
+              /* Preserve original document styling */
               .docx-preview h1, .docx-preview h2, .docx-preview h3, 
               .docx-preview h4, .docx-preview h5, .docx-preview h6 {
-                margin-top: 1.5rem !important;
-                margin-bottom: 0.5rem !important;
-                color: #333 !important;
-                font-weight: bold !important;
+                margin-top: 1rem;
+                margin-bottom: 0.5rem;
+                color: #333;
+                font-weight: bold;
+                line-height: 1.2;
               }
-              
-              .docx-preview h1 { font-size: 2rem !important; }
-              .docx-preview h2 { font-size: 1.75rem !important; }
-              .docx-preview h3 { font-size: 1.5rem !important; }
-              .docx-preview h4 { font-size: 1.25rem !important; }
-              .docx-preview h5 { font-size: 1.1rem !important; }
-              .docx-preview h6 { font-size: 1rem !important; }
               
               .docx-preview p {
-                margin-bottom: 1rem !important;
-                text-align: justify !important;
+                margin-bottom: 0.8rem;
+                line-height: 1.6;
               }
               
-              .docx-preview table {
-                border-collapse: collapse !important;
-                width: 100% !important;
-                margin: 1rem 0 !important;
-              }
-              
-              .docx-preview table, .docx-preview th, .docx-preview td {
-                border: 1px solid #dee2e6 !important;
-              }
-              
-              .docx-preview th, .docx-preview td {
-                padding: 0.5rem !important;
-                text-align: left !important;
-              }
-              
-              .docx-preview img {
-                max-width: 100% !important;
-                height: auto !important;
-                display: block !important;
-                margin: 1rem auto !important;
-              }
-              
-              .docx-preview ul, .docx-preview ol {
-                margin-bottom: 1rem !important;
-                padding-left: 2rem !important;
-              }
-              
-              .docx-preview li {
-                margin-bottom: 0.5rem !important;
-              }
-              
-              .docx-preview blockquote {
-                border-left: 4px solid #007bff !important;
-                padding-left: 1rem !important;
-                margin: 1rem 0 !important;
-                font-style: italic !important;
-                color: #666 !important;
-              }
-              
-              .docx-preview code {
-                background: #f8f9fa !important;
-                padding: 0.2rem 0.4rem !important;
-                border-radius: 3px !important;
-                font-family: 'Courier New', monospace !important;
-              }
-              
-              .docx-preview pre {
-                background: #f8f9fa !important;
-                padding: 1rem !important;
-                border-radius: 6px !important;
-                overflow-x: auto !important;
-                margin: 1rem 0 !important;
-              }
-              
+              /* Document-specific styling */
               .docx-preview .page {
-                margin-bottom: 2rem !important;
-                page-break-after: always !important;
+                margin-bottom: 2rem;
+                page-break-after: always;
               }
               
               .docx-preview .page:last-child {
-                page-break-after: auto !important;
+                page-break-after: auto;
+              }
+              
+              /* Preserve text alignment */
+              .docx-preview .text-center { text-align: center; }
+              .docx-preview .text-right { text-align: right; }
+              .docx-preview .text-left { text-align: left; }
+              .docx-preview .text-justify { text-align: justify; }
+              
+              /* Preserve text formatting */
+              .docx-preview .bold { font-weight: bold; }
+              .docx-preview .italic { font-style: italic; }
+              .docx-preview .underline { text-decoration: underline; }
+              .docx-preview .strikethrough { text-decoration: line-through; }
+              .docx-preview .highlight { background-color: yellow; }
+              .docx-preview .superscript { vertical-align: super; font-size: smaller; }
+              .docx-preview .subscript { vertical-align: sub; font-size: smaller; }
+              
+              /* Preserve indentation */
+              .docx-preview .indent { margin-left: 2rem; }
+              .docx-preview .indent-2 { margin-left: 4rem; }
+              .docx-preview .indent-3 { margin-left: 6rem; }
+              
+              /* Document title styling */
+              .docx-preview .document-title {
+                font-size: 1.5rem;
+                font-weight: bold;
+                text-align: center;
+                margin-bottom: 2rem;
+                color: #333;
+              }
+              
+              /* Activity details styling */
+              .docx-preview .activity-details {
+                margin-bottom: 2rem;
+                padding: 1rem;
+                background-color: #f9f9f9;
+                border-left: 4px solid #007bff;
+                border-radius: 4px;
+              }
+              
+              .docx-preview .activity-details strong {
+                color: #007bff;
+                font-weight: bold;
+              }
+              
+              /* Section headings */
+              .docx-preview .section-heading {
+                font-size: 1.2rem;
+                font-weight: bold;
+                margin-top: 2rem;
+                margin-bottom: 1rem;
+                color: #333;
+                border-bottom: 2px solid #007bff;
+                padding-bottom: 0.5rem;
               }
             </style>
           `;
@@ -293,35 +421,7 @@ export class FilePreviewService {
           });
         } catch (error) {
           console.error('docx-preview failed:', error);
-          // Fallback to mammoth if docx-preview fails
-          try {
-            const arrayBuffer = e.target?.result as ArrayBuffer;
-                         const result = await mammoth.convertToHtml({ arrayBuffer });
-            
-            const html = `
-              <style>
-                body { font-family: 'Times New Roman', serif; line-height: 1.6; color: #333; }
-                h1, h2, h3, h4, h5, h6 { margin-top: 1.5rem; margin-bottom: 0.5rem; color: #333; }
-                p { margin-bottom: 1rem; }
-                table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
-                table, th, td { border: 1px solid #dee2e6; }
-                th, td { padding: 0.5rem; text-align: left; }
-                img { max-width: 100%; height: auto; }
-              </style>
-              ${result.value}
-            `;
-            
-            resolve({
-              type: 'html',
-              content: html,
-              fileName,
-              fileType,
-              fileSize: this.formatFileSize(file.size)
-            });
-                     } catch (mammothError) {
-             console.error('mammoth fallback also failed:', mammothError);
-             reject(new Error(`Failed to process Word document: ${error}. Fallback also failed: ${mammothError}`));
-           }
+          reject(new Error(`Failed to render DOCX document: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
       };
       reader.onerror = reject;
@@ -446,42 +546,5 @@ export class FilePreviewService {
            supportedExtensions.includes(fileExtension);
   }
 
-  getFileTypeInfo(file: File): { type: string; description: string; icon: string } {
-    const fileType = file.type.toLowerCase();
-    const fileExtension = file.name.toLowerCase().split('.').pop() || '';
 
-    // Document types
-    if (fileType.includes('pdf') || fileExtension === 'pdf') {
-      return { type: 'PDF Document', description: 'Portable Document Format', icon: '📄' };
-    }
-    if (fileType.includes('word') || fileType.includes('docx') || fileType.includes('doc') || 
-        ['docx', 'doc'].includes(fileExtension)) {
-      return { type: 'Word Document', description: 'Microsoft Word Document', icon: '📝' };
-    }
-    if (fileType.includes('excel') || fileType.includes('spreadsheet') || 
-        ['xlsx', 'xls'].includes(fileExtension)) {
-      return { type: 'Excel Spreadsheet', description: 'Microsoft Excel Spreadsheet', icon: '📊' };
-    }
-    if (fileType.includes('powerpoint') || fileType.includes('presentation') || 
-        ['pptx', 'ppt'].includes(fileExtension)) {
-      return { type: 'PowerPoint Presentation', description: 'Microsoft PowerPoint Presentation', icon: '📈' };
-    }
-
-    // Image types
-    if (fileType.includes('image/') || ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'].includes(fileExtension)) {
-      return { type: 'Image File', description: 'Image File', icon: '🖼️' };
-    }
-
-    // Text types
-    if (fileType.includes('text/') || ['txt', 'md', 'csv', 'json', 'xml', 'html', 'htm'].includes(fileExtension)) {
-      return { type: 'Text File', description: 'Text Document', icon: '📄' };
-    }
-
-    // ODF types
-    if (fileType.includes('opendocument') || ['odf', 'odt', 'ods', 'odp'].includes(fileExtension)) {
-      return { type: 'Open Document', description: 'Open Document Format', icon: '📋' };
-    }
-
-    return { type: 'Unknown File', description: 'Unknown file type', icon: '❓' };
-  }
 } 
