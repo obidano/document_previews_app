@@ -1,163 +1,96 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { FilePreviewService } from '../../services/file-preview.service';
+import { FileUploadService } from '../../services/file-upload.service';
 
 @Component({
   selector: 'app-file-upload',
   standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div class="file-upload-container" 
-         (dragover)="onDragOver($event)" 
-         (dragleave)="onDragLeave($event)"
-         (drop)="onDrop($event)"
-         [class.drag-over]="isDragOver">
-      
-      <div class="upload-area">
-        <div class="upload-icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7,10 12,15 17,10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-        </div>
-        
-        <h3>Upload Files</h3>
-        <p>Drag and drop files here or click to browse</p>
-        
-        <div class="supported-formats">
-          <p><strong>Supported formats:</strong></p>
-          <ul>
-            <li>📄 PDF Documents (.pdf)</li>
-            <li>📝 Word Documents (.docx, .doc)</li>
-            <li>📊 Excel Spreadsheets (.xlsx, .xls)</li>
-            <li>📈 PowerPoint Presentations (.pptx, .ppt)</li>
-            <li>🖼️ Images (.png, .jpg, .jpeg, .gif, .bmp, .webp)</li>
-            <li>📄 Text Files (.txt, .md, .csv, .json, .xml, .html)</li>
-            <li>📋 Open Documents (.odf, .odt, .ods, .odp)</li>
-          </ul>
-        </div>
-        
-        <button type="button" class="browse-btn" (click)="fileInput.click()">
-          Browse Files
-        </button>
-        
-        <input #fileInput 
-               type="file" 
-               [accept]="acceptedFileTypes"
-               (change)="onFileSelected($event)"
-               style="display: none;"
-               multiple>
-      </div>
-      
-      <div *ngIf="errorMessage" class="error-message">
-        {{ errorMessage }}
-      </div>
-    </div>
-  `,
-  styles: [`
-    .file-upload-container {
-      border: 2px dashed #ccc;
-      border-radius: 8px;
-      padding: 2rem;
-      text-align: center;
-      transition: all 0.3s ease;
-      background: #fafafa;
-      min-height: 300px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .file-upload-container.drag-over {
-      border-color: #007bff;
-      background: #f0f8ff;
-      transform: scale(1.02);
-    }
-
-    .upload-area {
-      max-width: 500px;
-    }
-
-    .upload-icon {
-      color: #666;
-      margin-bottom: 1rem;
-    }
-
-    .upload-icon svg {
-      width: 48px;
-      height: 48px;
-    }
-
-    h3 {
-      margin: 0 0 0.5rem 0;
-      color: #333;
-      font-size: 1.5rem;
-    }
-
-    p {
-      margin: 0 0 1rem 0;
-      color: #666;
-    }
-
-    .supported-formats {
-      margin: 1.5rem 0;
-      text-align: left;
-      background: #f8f9fa;
-      padding: 1rem;
-      border-radius: 6px;
-    }
-
-    .supported-formats p {
-      margin: 0 0 0.5rem 0;
-      font-weight: 500;
-    }
-
-    .supported-formats ul {
-      margin: 0;
-      padding-left: 1.5rem;
-      color: #666;
-    }
-
-    .supported-formats li {
-      margin: 0.25rem 0;
-    }
-
-    .browse-btn {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 1rem;
-      transition: background 0.3s ease;
-    }
-
-    .browse-btn:hover {
-      background: #0056b3;
-    }
-
-    .error-message {
-      color: #dc3545;
-      background: #f8d7da;
-      border: 1px solid #f5c6cb;
-      border-radius: 4px;
-      padding: 0.75rem;
-      margin-top: 1rem;
-      max-width: 500px;
-    }
-  `]
+  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
+  templateUrl: './file-upload.component.html',
+  styleUrls: ['./file-upload.component.scss']
 })
 export class FileUploadComponent {
   @Output() fileSelected = new EventEmitter<File>();
+  @Output() uploadSuccess = new EventEmitter<any>();
+  @Output() uploadError = new EventEmitter<string>();
   
   isDragOver = false;
   errorMessage = '';
-  acceptedFileTypes = '.docx,.doc,.pdf,.png,.jpg,.jpeg,.gif,.bmp,.webp,.odf,.xlsx,.xls,.pptx,.ppt,.txt,.md,.csv,.json,.xml,.html,.htm,.odt,.ods,.odp';
+  uploading = false;
+  acceptedFileTypes = '.docx,.doc,.pdf,.png,.jpg,.jpeg,.gif,.bmp,.webp';
 
-  constructor(private filePreviewService: FilePreviewService) {}
+  constructor(
+    private filePreviewService: FilePreviewService,
+    private fileUploadService: FileUploadService,
+    public dialogRef: MatDialogRef<FileUploadComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any
+  ) {}
+
+  // Function to sanitize filenames by replacing special characters
+  private sanitizeFilename(filename: string): string {
+    // Replace special characters with safe alternatives
+    const replacements: { [key: string]: string } = {
+      'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+      'à': 'a', 'â': 'a', 'ä': 'a', 'á': 'a', 'ã': 'a',
+      'ù': 'u', 'û': 'u', 'ü': 'u', 'ú': 'u',
+      'ì': 'i', 'î': 'i', 'ï': 'i', 'í': 'i',
+      'ò': 'o', 'ô': 'o', 'ö': 'o', 'ó': 'o', 'õ': 'o',
+      'ñ': 'n', 'ç': 'c',
+      'É': 'E', 'È': 'E', 'Ê': 'E', 'Ë': 'E',
+      'À': 'A', 'Â': 'A', 'Ä': 'A', 'Á': 'A', 'Ã': 'A',
+      'Ù': 'U', 'Û': 'U', 'Ü': 'U', 'Ú': 'U',
+      'Ì': 'I', 'Î': 'I', 'Ï': 'I', 'Í': 'I',
+      'Ò': 'O', 'Ô': 'O', 'Ö': 'O', 'Ó': 'O', 'Õ': 'O',
+      'Ñ': 'N', 'Ç': 'C',
+      ' ': '_', // Replace spaces with underscores
+      '&': 'and',
+      '#': 'hash',
+      '%': 'percent',
+      '+': 'plus',
+      '=': 'equals',
+      '@': 'at',
+      '!': 'exclamation',
+      '$': 'dollar',
+      '^': 'caret',
+      '*': 'asterisk',
+      '(': '',
+      ')': '',
+      '[': '',
+      ']': '',
+      '{': '',
+      '}': '',
+      '|': '',
+      '\\': '',
+      '/': '',
+      ':': '',
+      ';': '',
+      '"': '',
+      "'": '',
+      '<': '',
+      '>': '',
+      ',': '',
+      '?': '',
+      '~': '',
+      '`': ''
+    };
+    
+    let sanitized = filename;
+    for (const [char, replacement] of Object.entries(replacements)) {
+      sanitized = sanitized.replace(new RegExp(char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replacement);
+    }
+    
+    // Remove any remaining non-alphanumeric characters except dots and hyphens
+    sanitized = sanitized.replace(/[^a-zA-Z0-9._-]/g, '');
+    
+    // Ensure the filename doesn't start or end with dots or hyphens
+    sanitized = sanitized.replace(/^[._-]+/, '').replace(/[._-]+$/, '');
+    
+    return sanitized;
+  }
 
   onDragOver(event: DragEvent) {
     event.preventDefault();
@@ -204,12 +137,48 @@ export class FileUploadComponent {
           }
         }
         
-        this.fileSelected.emit(file);
+        // Upload to server
+        this.uploadFile(file);
       } else {
         this.errorMessage = `Unsupported file type: ${file.name}. Please upload a supported file type.`;
         break;
       }
     }
+  }
+
+  private uploadFile(file: File) {
+    this.uploading = true;
+    this.errorMessage = '';
+
+    // Log original filename for debugging
+    console.log('Original filename:', file.name);
+    
+    // Create a new File object with sanitized name if needed
+    let fileToUpload = file;
+    const originalName = file.name;
+    const sanitizedName = this.sanitizeFilename(originalName);
+    
+    if (originalName !== sanitizedName) {
+      console.log('Sanitized filename:', sanitizedName);
+      // Create a new File object with the sanitized name
+      fileToUpload = new File([file], sanitizedName, { type: file.type });
+    }
+
+    this.fileUploadService.uploadFile(fileToUpload).subscribe({
+      next: (response) => {
+        this.uploading = false;
+        this.uploadSuccess.emit(response.file);
+        this.fileSelected.emit(file); // Keep for backward compatibility
+        // Close the dialog after successful upload
+        this.dialogRef.close(response.file);
+      },
+      error: (error) => {
+        this.uploading = false;
+        const errorMsg = error.error?.error || 'Upload failed. Please try again.';
+        this.errorMessage = errorMsg;
+        this.uploadError.emit(errorMsg);
+      }
+    });
   }
 
   private isPdfFile(file: File): boolean {
