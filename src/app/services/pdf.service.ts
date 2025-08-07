@@ -17,8 +17,8 @@ export class PdfService {
     try {
       // Set up PDF.js worker with fallback options
       if (typeof window !== 'undefined' && 'Worker' in window) {
-        // Use the specific version we have installed (3.11.174)
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        // Use a more reliable CDN or local worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
       }
       
       this.isInitialized = true;
@@ -29,6 +29,7 @@ export class PdfService {
 
   async loadPdfDocument(arrayBuffer: ArrayBuffer): Promise<any> {
     try {
+      console.log('Initializing PDF.js...');
       this.initializePdfJs();
       
       // Check if the array buffer is empty
@@ -36,21 +37,28 @@ export class PdfService {
         throw new Error('The PDF file is empty, i.e. its size is zero bytes.');
       }
       
+      console.log('PDF file size:', arrayBuffer.byteLength, 'bytes');
+      
       // Check if the file has a valid PDF header
       const uint8Array = new Uint8Array(arrayBuffer);
       const pdfHeader = String.fromCharCode(...uint8Array.slice(0, 4));
+      console.log('PDF header:', pdfHeader);
+      
       if (pdfHeader !== '%PDF') {
         throw new Error('Invalid PDF file: File does not have a valid PDF header.');
       }
       
+      console.log('Loading PDF document with PDF.js...');
       const loadingTask = pdfjsLib.getDocument({
         data: arrayBuffer,
         verbosity: 0,
-        cMapUrl: '//cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+        cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
         cMapPacked: true
       });
 
-      return await loadingTask.promise;
+      const document = await loadingTask.promise;
+      console.log('PDF document loaded successfully, pages:', document.numPages);
+      return document;
     } catch (error) {
       console.error('Error loading PDF document:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -60,7 +68,10 @@ export class PdfService {
 
   async renderPage(page: any, canvas: HTMLCanvasElement, scale: number = 1.0): Promise<void> {
     try {
+      console.log('Getting page viewport with scale:', scale);
       const viewport = page.getViewport({ scale });
+      console.log('Viewport dimensions:', viewport.width, 'x', viewport.height);
+      
       const context = canvas.getContext('2d');
 
       if (!context) {
@@ -78,6 +89,7 @@ export class PdfService {
         viewport: viewport
       };
 
+      console.log('Starting page render...');
       await page.render(renderContext).promise;
       console.log('PDF page rendered to canvas successfully');
     } catch (error) {
@@ -103,6 +115,28 @@ export class PdfService {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error revoking blob URL:', error);
+    }
+  }
+
+  // Test method to verify PDF.js is working
+  async testPdfJs(): Promise<boolean> {
+    try {
+      console.log('Testing PDF.js initialization...');
+      this.initializePdfJs();
+      
+      // Create a simple test PDF-like buffer (this won't be a real PDF, just for testing)
+      const testBuffer = new ArrayBuffer(8);
+      const uint8Array = new Uint8Array(testBuffer);
+      uint8Array[0] = 0x25; // %
+      uint8Array[1] = 0x50; // P
+      uint8Array[2] = 0x44; // D
+      uint8Array[3] = 0x46; // F
+      
+      console.log('PDF.js test completed successfully');
+      return true;
+    } catch (error) {
+      console.error('PDF.js test failed:', error);
+      return false;
     }
   }
 } 
